@@ -1,0 +1,48 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+  name: Default
+
+steps:
+
+- task: DockerCompose@0
+  displayName: 'Docker Compose command'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryEndpoint: 'docker-svc-conn'
+    dockerComposeFile: '**/docker-compose.yml'
+    action: 'Build services'
+
+- task: DockerCompose@0
+  displayName: 'Push service images command'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryEndpoint: 'docker-svc-conn'
+    dockerComposeFile: '**/docker-compose.yml'
+    action: 'Push services'
+    includeSourceTags: true
+    includeLatestTag: true
+
+- task: KubernetesManifest@0
+  displayName: Create Manifest Files
+  name: bake
+  inputs:
+    action: 'bake'
+    renderType: kustomize
+    kustomizationPath: './'
+    kubernetesServiceConnection: 'kubernetes-svc-conn'
+    namespace: 'sample-app'
+    manifests: $(bake.manifestsBundle)
+
+- task: KubernetesManifest@0
+  displayName: Deploy K8s manifests
+  inputs:
+    kubernetesServiceConnection: 'kubernetes-svc-conn'
+    namespace: 'sample-app'
+    manifests: $(bake.manifestsBundle)

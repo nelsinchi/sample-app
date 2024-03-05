@@ -1,0 +1,11 @@
+resources:
+  - k8s-manifests/api.yaml
+  - k8s-manifests/db.yaml
+  - k8s-manifests/web.yaml
+configMapGenerator:
+  - name: db-schema
+    namespace: sample-app
+    files:
+      - ./db/words.sql
+generatorOptions:
+  disableNameSuffixHash: true
